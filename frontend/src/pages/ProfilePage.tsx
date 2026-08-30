@@ -9,6 +9,8 @@ const empty: Profile = {
   expected_job_type: '校招全职',
   expected_role: '',
   expected_city: '',
+  expected_salary_min: 0,
+  expected_salary_max: 0,
   skills: '',
   self_intro: '',
 }
@@ -42,7 +44,7 @@ export default function ProfilePage() {
       <header className="page-head">
         <div>
           <h1>个人档案</h1>
-          <p>这些信息只存在本机 SQLite，用来生成检索词和匹配理由。</p>
+          <p>这些信息只存在本机 SQLite。校招/实习会硬性过滤社招；薪资按月薪 K 与职位标注区间求交集，未标注薪资的校招入口仍会保留。</p>
         </div>
       </header>
       <form className="form" onSubmit={(event) => void save(event)}>
@@ -91,6 +93,28 @@ export default function ProfilePage() {
             value={form.expected_city}
             onChange={(event) => set('expected_city', event.target.value)}
             placeholder="杭州"
+          />
+        </label>
+        <label>
+          最低月薪（K）
+          <input
+            type="number"
+            min={0}
+            max={200}
+            value={form.expected_salary_min || ''}
+            onChange={(event) => set('expected_salary_min', Number(event.target.value) || 0)}
+            placeholder="不限，如 15"
+          />
+        </label>
+        <label>
+          最高月薪（K）
+          <input
+            type="number"
+            min={0}
+            max={200}
+            value={form.expected_salary_max || ''}
+            onChange={(event) => set('expected_salary_max', Number(event.target.value) || 0)}
+            placeholder="不限，如 30"
           />
         </label>
         <label className="span-2">

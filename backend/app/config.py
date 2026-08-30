@@ -10,8 +10,8 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 class Settings(BaseSettings):
     llm_api_key: str = ""
-    llm_base_url: str = "https://api.deepseek.com"
-    llm_model: str = "deepseek-chat"
+    llm_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
+    llm_model: str = "glm-4.7-flash"
     cache_ttl_hours: int = 8
     request_interval_seconds: float = 1.5
     database_url: str = f"sqlite:///{DATA_DIR / 'app.db'}"

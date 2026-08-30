@@ -12,10 +12,10 @@ from app.services.profile import get_or_create_profile
 router = APIRouter(prefix="/favorites", tags=["favorites"])
 
 
-def _to_out(fav: Favorite, profile, fav_ids: set[str]) -> FavoriteOut:
+def _to_out(fav: Favorite, profile, fav_ids: set[str], db: Session | None = None) -> FavoriteOut:
     job_out: JobOut | None = None
     if fav.job:
-        job_out = to_out(fav.job, profile=profile, favorited=fav.job.id in fav_ids)
+        job_out = to_out(fav.job, profile=profile, favorited=fav.job.id in fav_ids, db=db)
     return FavoriteOut(
         id=fav.id,
         job_id=fav.job_id,
@@ -35,7 +35,7 @@ def list_favorites(db: Session = Depends(get_db)) -> list[FavoriteOut]:
     ).all()
     profile = get_or_create_profile(db)
     fav_ids = favorite_job_ids(db)
-    return [_to_out(row, profile, fav_ids) for row in rows]
+    return [_to_out(row, profile, fav_ids, db) for row in rows]
 
 
 @router.post("", response_model=FavoriteOut)
@@ -53,7 +53,7 @@ def add_favorite(payload: FavoriteIn, db: Session = Depends(get_db)) -> Favorite
                 select(Favorite).options(selectinload(Favorite.job)).where(Favorite.id == existing.id)
             ) or existing
             profile = get_or_create_profile(db)
-            return _to_out(existing, profile, favorite_job_ids(db))
+            return _to_out(existing, profile, favorite_job_ids(db), db)
         title = title or job.title
         url = url or job.apply_url or job.official_url
         kind = "job"
@@ -70,7 +70,7 @@ def add_favorite(payload: FavoriteIn, db: Session = Depends(get_db)) -> Favorite
         if loaded is not None:
             fav = loaded
     profile = get_or_create_profile(db)
-    return _to_out(fav, profile, favorite_job_ids(db))
+    return _to_out(fav, profile, favorite_job_ids(db), db)
 
 
 @router.delete("/by-job/{job_id}")
@@ -108,4 +108,4 @@ def save_boss_link(payload: BossLinkIn, db: Session = Depends(get_db)) -> Favori
     db.commit()
     db.refresh(fav)
     profile = get_or_create_profile(db)
-    return _to_out(fav, profile, favorite_job_ids(db))
+    return _to_out(fav, profile, favorite_job_ids(db), db)

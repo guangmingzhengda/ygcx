@@ -25,7 +25,8 @@ html,
 body,
 #root {
   margin: 0;
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -51,20 +52,28 @@ textarea {
   color: inherit;
 }
 
+::placeholder {
+  color: color-mix(in srgb, var(--muted) 78%, transparent);
+}
+
 .shell {
   display: flex;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
 }
 
 .sidebar {
   width: 248px;
   flex-shrink: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   background: color-mix(in srgb, var(--bg-sidebar) 92%, black);
   border-right: 1px solid var(--line);
   padding: 22px 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .brand {
@@ -72,6 +81,8 @@ textarea {
   gap: 12px;
   align-items: center;
   padding: 4px 8px 12px;
+  color: inherit;
+  flex-shrink: 0;
 }
 
 .brand__mark {
@@ -106,6 +117,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .nav__item {
@@ -115,10 +127,67 @@ textarea {
   padding: 10px 12px;
   border-radius: 12px;
   color: var(--muted);
+  transition: background 0.16s ease, color 0.16s ease;
 }
 
 .nav__item.is-active,
 .nav__item:hover {
+  background: rgba(196, 30, 36, 0.16);
+  color: var(--text);
+}
+
+.recent {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.recent__label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 4px 12px 8px;
+  flex-shrink: 0;
+}
+
+.recent__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 0 0 8px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent-2) 45%, transparent) transparent;
+}
+
+.recent__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.recent__list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent-2) 40%, transparent);
+  border-radius: 999px;
+}
+
+.recent__item {
+  display: block;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent__item.is-active,
+.recent__item:hover {
   background: rgba(196, 30, 36, 0.16);
   color: var(--text);
 }
@@ -129,6 +198,7 @@ textarea {
   flex-direction: column;
   gap: 10px;
   padding: 0 4px;
+  flex-shrink: 0;
 }
 
 .brand-badges {
@@ -154,8 +224,11 @@ textarea {
 .main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .topbar {
@@ -168,8 +241,16 @@ textarea {
 
 .content {
   flex: 1;
+  min-height: 0;
   padding: 28px 32px 40px;
   overflow: auto;
+}
+
+.content:has(.page--chat) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 16px;
 }
 
 .page h1 {
@@ -210,11 +291,13 @@ textarea {
 }
 
 .page--chat {
-  height: calc(100vh - 56px);
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   max-width: 1080px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .chat-log {
@@ -230,14 +313,17 @@ textarea {
 }
 
 .hero-logo {
-  width: 112px;
-  height: 112px;
-  margin: 0 auto 18px;
-  border-radius: 50%;
+  width: min(380px, 88%);
+  aspect-ratio: 960 / 264;
+  height: auto;
+  margin: 0 auto 20px;
+  border-radius: 999px;
   overflow: hidden;
-  border: 3px solid var(--accent);
+  border: 2px solid var(--accent);
   background: #fff;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 45%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent-2) 42%, transparent),
+    0 16px 32px rgba(20, 8, 10, 0.28);
 }
 
 .hero-logo video,
@@ -268,22 +354,24 @@ textarea {
 .hint-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 22px;
 }
 
 .bubble {
   margin: 0 0 18px;
-  padding: 14px 16px;
-  border-radius: var(--radius);
+  padding: 16px 18px;
+  border-radius: 18px;
   background: var(--card);
   border: 1px solid var(--line);
+  box-shadow: 0 10px 24px rgba(20, 8, 10, 0.18);
 }
 
 .bubble--user {
   margin-left: 18%;
-  background: rgba(196, 30, 36, 0.16);
+  background: linear-gradient(180deg, rgba(196, 30, 36, 0.22), rgba(196, 30, 36, 0.1));
+  border-color: rgba(196, 30, 36, 0.28);
 }
 
 .bubble p {
@@ -296,6 +384,7 @@ textarea {
 .filters,
 .boss-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin: 12px 0 20px;
 }
@@ -303,50 +392,157 @@ textarea {
 .composer {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(transparent, var(--bg) 24%);
-  padding-top: 12px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 8px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg) 88%, black) 28%);
+  padding: 18px 0 8px;
+}
+
+.composer__box {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 8px 8px 16px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(44, 24, 28, 0.92), rgba(28, 18, 20, 0.96));
+  border: 1px solid color-mix(in srgb, var(--accent-2) 28%, var(--line));
+  box-shadow:
+    0 0 0 1px rgba(196, 30, 36, 0.08),
+    0 14px 36px rgba(12, 4, 6, 0.35);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.composer__box:focus-within {
+  border-color: color-mix(in srgb, var(--accent-2) 55%, white);
+  box-shadow:
+    0 0 0 3px rgba(212, 175, 90, 0.16),
+    0 16px 40px rgba(12, 4, 6, 0.4);
+}
+
+.composer textarea {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  min-height: 28px;
+  max-height: 132px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  padding: 10px 4px 12px;
+  line-height: 1.5;
+  field-sizing: content;
+}
+
+.composer textarea:focus {
+  box-shadow: none;
+  background: transparent;
+  border-color: transparent;
+}
+
+.composer__send {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 16px;
+}
+
+.composer__hint {
+  margin: 0 6px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+
+.filters,
+.boss-form {
+  padding: 12px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  border: 1px solid var(--line);
+}
+
+.filters input,
+.filters select,
+.boss-form input {
+  flex: 1 1 140px;
+  min-width: 120px;
 }
 
 input,
 select,
 textarea {
   width: 100%;
-  background: var(--bg-elev);
+  background: color-mix(in srgb, var(--bg-elev) 88%, black);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 11px 12px;
+  border-radius: 14px;
+  padding: 12px 14px;
   outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--peach) 50%),
+    linear-gradient(135deg, var(--peach) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: color-mix(in srgb, var(--peach) 35%, var(--line));
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: color-mix(in srgb, var(--accent) 55%, white);
+  border-color: color-mix(in srgb, var(--accent-2) 60%, white);
+  background: color-mix(in srgb, var(--card) 70%, black);
+  box-shadow: 0 0 0 3px rgba(212, 175, 90, 0.14);
 }
 
 .btn {
   border: 1px solid var(--line);
-  background: var(--bg-elev);
-  border-radius: 11px;
-  padding: 9px 14px;
+  background: color-mix(in srgb, var(--bg-elev) 90%, white 4%);
+  border-radius: 13px;
+  padding: 10px 16px;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
 }
 
 .btn:hover:not(:disabled) {
   background: var(--card-hover);
+  border-color: color-mix(in srgb, var(--accent-2) 28%, var(--line));
+  transform: translateY(-1px);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: default;
 }
 
 .btn--primary {
-  background: linear-gradient(135deg, #c41e24, #e24a3a);
+  background: linear-gradient(135deg, #d4272e 0%, #c41e24 52%, #a3181e 100%);
   color: #fff8f4;
-  border: none;
+  border: 1px solid color-mix(in srgb, #ffd0a8 18%, transparent);
   font-weight: 600;
+  box-shadow: 0 8px 18px rgba(196, 30, 36, 0.28);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e2363c 0%, #d4272e 55%, #b51c22 100%);
+  box-shadow: 0 10px 22px rgba(196, 30, 36, 0.36);
 }
 
 .job-grid {
@@ -401,6 +597,46 @@ textarea:focus {
   -webkit-line-clamp: 2;
 }
 
+.job-card__exps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+
+.job-card__exps-title {
+  margin: 0;
+  font-size: 12px;
+  color: var(--accent-2);
+}
+
+.job-card__exp {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.job-card__exp:hover {
+  color: var(--accent);
+}
+
+.job-card__exp-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.job-card__exp-links a {
+  color: var(--muted);
+}
+
 .job-card__meta,
 .job-card__actions {
   display: flex;
@@ -434,7 +670,30 @@ textarea:focus {
 
 .chip--click {
   cursor: pointer;
-  background: var(--card);
+  background: color-mix(in srgb, var(--card) 80%, white 4%);
+  padding: 8px 14px;
+  border-color: color-mix(in srgb, var(--accent-2) 22%, var(--line));
+  color: var(--text);
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.chip--click:hover {
+  border-color: color-mix(in srgb, var(--accent-2) 55%, white);
+  background: rgba(196, 30, 36, 0.16);
+  transform: translateY(-1px);
+}
+
+.chip--warn {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .score-ring {
@@ -447,7 +706,12 @@ textarea:focus {
   color: var(--accent-2);
   font-size: 13px;
   font-weight: 600;
-  flex-shrink: 0;
+}
+
+.score-ring__label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
 }
 
 .form {

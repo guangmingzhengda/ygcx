@@ -15,3 +15,6 @@ class RawJob:
     description: str = ""
     tags: list[str] = field(default_factory=list)
     company_info: str = ""
+    salary_min: int = 0
+    salary_max: int = 0
+    salary_text: str = ""

@@ -4,8 +4,10 @@ export type Profile = {
   major: string
   expected_job_type: string
   expected_role: string
-  expected_city: string
-  skills: string
+    expected_city: string
+    expected_salary_min: number
+    expected_salary_max: number
+    skills: string
   self_intro: string
   updated_at?: string | null
 }
@@ -22,11 +24,17 @@ export type Job = {
   description: string
   tags: string[]
   company_info: string
+  salary_min: number
+  salary_max: number
+  salary_text: string
   fetched_at?: string | null
   match_score?: number | null
   match_reason?: string | null
   boss_search_url: string
   favorited: boolean
+  experience_posts?: { title: string; url: string; source: string }[]
+  nowcoder_experience_url?: string
+  zhihu_experience_url?: string
 }
 
 export type Favorite = {

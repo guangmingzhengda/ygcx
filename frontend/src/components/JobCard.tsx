@@ -43,6 +43,9 @@ export function JobCard({ job, onFavoriteChange }: Props) {
   }
 
   const score = local.match_score ?? 0
+  const apply = (local.apply_url || '').replace(/\/$/, '')
+  const official = (local.official_url || '').replace(/\/$/, '')
+  const showOfficial = Boolean(official && official !== apply)
 
   return (
     <article className="job-card">
@@ -51,13 +54,22 @@ export function JobCard({ job, onFavoriteChange }: Props) {
           <p className="job-card__company">{local.company || '未知公司'}</p>
           <h3>{local.title}</h3>
         </div>
-        <div className="score-ring" title="匹配度">
-          <span>{score}</span>
+        <div
+          className="score-box"
+          title="与你档案/关键词的匹配度，0–100。库里多为公司校招入口而不是具体岗位 JD，所以相近公司数字可能接近。"
+        >
+          <div className="score-ring">
+            <span>{score}</span>
+          </div>
+          <span className="score-ring__label">匹配度</span>
         </div>
       </header>
       <div className="job-card__meta">
         <span className={`badge badge--${local.source}`}>{SOURCE_LABEL[local.source] ?? local.source}</span>
-        {local.job_type ? <span className="chip">{local.job_type}</span> : null}
+        {local.job_type ? (
+          <span className={`chip ${local.job_type === '社招' ? 'chip--warn' : ''}`}>{local.job_type}</span>
+        ) : null}
+        {local.salary_text ? <span className="chip">{local.salary_text}</span> : null}
         {local.city ? <span className="chip">{local.city}</span> : null}
         {local.tags.slice(0, 3).map((tag) => (
           <span className="chip" key={tag}>
@@ -70,15 +82,39 @@ export function JobCard({ job, onFavoriteChange }: Props) {
         <p className="job-card__desc">{local.description}</p>
       ) : null}
       {local.match_reason ? <p className="job-card__reason">{local.match_reason}</p> : null}
+      {(local.experience_posts && local.experience_posts.length > 0) ||
+      local.nowcoder_experience_url ||
+      local.zhihu_experience_url ? (
+        <section className="job-card__exps">
+          <p className="job-card__exps-title">相关经验贴</p>
+          {local.experience_posts?.slice(0, 3).map((post) => (
+            <a key={post.url} className="job-card__exp" href={post.url} target="_blank" rel="noreferrer">
+              {post.title}
+            </a>
+          ))}
+          <div className="job-card__exp-links">
+            {local.nowcoder_experience_url ? (
+              <a href={local.nowcoder_experience_url} target="_blank" rel="noreferrer">
+                牛客面经搜索
+              </a>
+            ) : null}
+            {local.zhihu_experience_url ? (
+              <a href={local.zhihu_experience_url} target="_blank" rel="noreferrer">
+                知乎面经搜索
+              </a>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
       <footer className="job-card__actions">
         {local.apply_url ? (
           <a className="btn btn--primary" href={local.apply_url} target="_blank" rel="noreferrer">
-            投递 / 查看
+            投递 / 校招页
           </a>
         ) : null}
-        {local.official_url ? (
+        {showOfficial ? (
           <a className="btn" href={local.official_url} target="_blank" rel="noreferrer">
-            官网
+            公司官网
           </a>
         ) : null}
         {local.boss_search_url ? (

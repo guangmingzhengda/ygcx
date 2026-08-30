@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
+import { clearLastConversationId } from '../conversation'
 import type { ConversationSummary } from '../types'
 
 export default function HistoryPage() {
@@ -21,6 +22,7 @@ export default function HistoryPage() {
 
   async function remove(id: string) {
     await api.deleteConversation(id)
+    clearLastConversationId(id)
     await load()
   }
 
@@ -29,7 +31,7 @@ export default function HistoryPage() {
       <header className="page-head">
         <div>
           <h1>历史对话</h1>
-          <p>继续上次的校招检索，或删掉不再需要的记录。</p>
+          <p>点左侧最近记录可继续上次对话；「新对话」只会开空白会话。</p>
         </div>
       </header>
       {error ? <p className="error">{error}</p> : null}

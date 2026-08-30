@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import settings
 from app.db import init_db
 from app.routers import chat, favorites, jobs, profile
 
@@ -30,4 +31,9 @@ app.include_router(chat.router, prefix="/api")
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "name": "求职导航"}
+    return {
+        "ok": True,
+        "name": "求职导航",
+        "llm_model": settings.llm_model,
+        "llm_ready": bool(settings.llm_api_key.strip()),
+    }

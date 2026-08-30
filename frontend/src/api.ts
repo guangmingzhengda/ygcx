@@ -30,11 +30,22 @@ export const api = {
   getProfile: () => request<Profile>('/api/profile'),
   saveProfile: (payload: Profile) =>
     request<Profile>('/api/profile', { method: 'PUT', body: JSON.stringify(payload) }),
-  searchJobs: (params: { q?: string; city?: string; source?: string; refresh?: boolean }) => {
+  searchJobs: (params: {
+    q?: string
+    city?: string
+    source?: string
+    job_type?: string
+    salary_min?: number
+    salary_max?: number
+    refresh?: boolean
+  }) => {
     const q = new URLSearchParams()
     if (params.q) q.set('q', params.q)
     if (params.city) q.set('city', params.city)
     if (params.source) q.set('source', params.source)
+    if (params.job_type) q.set('job_type', params.job_type)
+    if (params.salary_min) q.set('salary_min', String(params.salary_min))
+    if (params.salary_max) q.set('salary_max', String(params.salary_max))
     if (params.refresh) q.set('refresh', 'true')
     return request<Job[]>(`/api/jobs/search?${q.toString()}`)
   },

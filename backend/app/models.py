@@ -18,6 +18,8 @@ class Profile(Base):
     expected_city: Mapped[str] = mapped_column(String(64), default="")
     skills: Mapped[str] = mapped_column(Text, default="")
     self_intro: Mapped[str] = mapped_column(Text, default="")
+    expected_salary_min: Mapped[int] = mapped_column(Integer, default=0)
+    expected_salary_max: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
@@ -37,6 +39,20 @@ class Job(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     tags: Mapped[str] = mapped_column(Text, default="[]")
     company_info: Mapped[str] = mapped_column(Text, default="")
+    salary_min: Mapped[int] = mapped_column(Integer, default=0)
+    salary_max: Mapped[int] = mapped_column(Integer, default=0)
+    salary_text: Mapped[str] = mapped_column(String(64), default="")
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Experience(Base):
+    __tablename__ = "experiences"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    title: Mapped[str] = mapped_column(String(256), default="")
+    url: Mapped[str] = mapped_column(Text, default="")
+    company: Mapped[str] = mapped_column(String(128), default="")
+    source: Mapped[str] = mapped_column(String(32), default="nowcoder")
     fetched_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

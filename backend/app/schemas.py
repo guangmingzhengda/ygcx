@@ -12,10 +12,18 @@ class ProfileIn(BaseModel):
     expected_city: str = ""
     skills: str = ""
     self_intro: str = ""
+    expected_salary_min: int = 0
+    expected_salary_max: int = 0
 
 
 class ProfileOut(ProfileIn):
     updated_at: datetime | None = None
+
+
+class ExperiencePostOut(BaseModel):
+    title: str
+    url: str
+    source: str = "nowcoder"
 
 
 class JobOut(BaseModel):
@@ -30,11 +38,17 @@ class JobOut(BaseModel):
     description: str = ""
     tags: list[str] = Field(default_factory=list)
     company_info: str = ""
+    salary_min: int = 0
+    salary_max: int = 0
+    salary_text: str = ""
     fetched_at: datetime | None = None
     match_score: int | None = None
     match_reason: str | None = None
     boss_search_url: str = ""
     favorited: bool = False
+    experience_posts: list[ExperiencePostOut] = Field(default_factory=list)
+    nowcoder_experience_url: str = ""
+    zhihu_experience_url: str = ""
 
 
 class FavoriteIn(BaseModel):

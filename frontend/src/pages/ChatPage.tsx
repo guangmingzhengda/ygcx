@@ -1,33 +1,49 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { brand } from '../brand'
 import { JobList } from '../components/JobList'
+import { getLastConversationId, setLastConversationId, clearLastConversationId } from '../conversation'
 import type { ChatMessage, Job } from '../types'
 
 export default function ChatPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const boxRef = useRef<HTMLDivElement>(null)
+  const isNew = location.pathname === '/new'
+  const lastId = getLastConversationId()
 
   useEffect(() => {
     if (!id) {
       setMessages([])
+      setError('')
       return
     }
     void api
       .getConversation(id)
-      .then((conv) => setMessages(conv.messages))
-      .catch((err: Error) => setError(err.message))
-  }, [id])
+      .then((conv) => {
+        setLastConversationId(conv.id)
+        setMessages(conv.messages)
+        setError('')
+      })
+      .catch(() => {
+        clearLastConversationId(id)
+        navigate('/new', { replace: true })
+      })
+  }, [id, navigate])
 
   useEffect(() => {
     boxRef.current?.scrollTo({ top: boxRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages])
+
+  if (!id && !isNew && lastId) {
+    return <Navigate to={`/chat/${lastId}`} replace />
+  }
 
   async function send() {
     const text = input.trim()
@@ -41,6 +57,7 @@ export default function ChatPage() {
     ])
     try {
       const result = await api.chat(text, id)
+      setLastConversationId(result.conversation_id)
       if (!id) navigate(`/chat/${result.conversation_id}`, { replace: true })
       setMessages(result.conversation.messages)
     } catch (err) {
@@ -100,14 +117,35 @@ export default function ChatPage() {
           void send()
         }}
       >
-        <input
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder="输入意向，例如：深圳前端校招"
-        />
-        <button className="btn btn--primary" type="submit" disabled={busy}>
-          发送
-        </button>
+        <div className="composer__box">
+          <textarea
+            rows={1}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault()
+                void send()
+              }
+            }}
+            placeholder="说说意向，例如：杭州后端校招，不要社招"
+            disabled={busy}
+          />
+          <button className="btn btn--primary composer__send" type="submit" disabled={busy || !input.trim()}>
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path
+                d="M5 12h11M12 6l6 6-6 6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {busy ? '检索中' : '发送'}
+          </button>
+        </div>
+        <p className="composer__hint">Enter 发送，Shift + Enter 换行</p>
       </form>
     </section>
   )

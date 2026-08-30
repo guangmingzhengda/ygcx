@@ -12,6 +12,7 @@ export default function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<ChatPage />} />
+          <Route path="/new" element={<ChatPage />} />
           <Route path="/chat/:id" element={<ChatPage />} />
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />

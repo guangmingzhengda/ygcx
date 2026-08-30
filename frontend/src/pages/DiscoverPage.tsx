@@ -7,6 +7,9 @@ export default function DiscoverPage() {
   const [q, setQ] = useState('')
   const [city, setCity] = useState('')
   const [source, setSource] = useState('')
+  const [jobType, setJobType] = useState('校招全职')
+  const [salaryMin, setSalaryMin] = useState(0)
+  const [salaryMax, setSalaryMax] = useState(0)
   const [jobs, setJobs] = useState<Job[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -16,7 +19,15 @@ export default function DiscoverPage() {
     setBusy(true)
     setError('')
     try {
-      const data = await api.searchJobs({ q, city, source, refresh })
+      const data = await api.searchJobs({
+        q,
+        city,
+        source,
+        job_type: jobType,
+        salary_min: salaryMin,
+        salary_max: salaryMax,
+        refresh,
+      })
       setJobs(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载失败')
@@ -47,7 +58,9 @@ export default function DiscoverPage() {
       <header className="page-head">
         <div>
           <h1>职位发现</h1>
-          <p>仪光赤心实践队科创组：聚合官网校招入口与牛客公开日程，按档案排序。</p>
+          <p>
+            卡片右上角是匹配度。职位发现用规则打分；对话里会再用 AI 理解条件并重排。每张卡会附带该公司在牛客公开页上的面经/经验贴，抓不到具体帖子时也可以跳转搜索。
+          </p>
         </div>
         <button className="btn" type="button" disabled={busy} onClick={() => void load(true)}>
           {busy ? '刷新中…' : '刷新数据源'}
@@ -62,11 +75,31 @@ export default function DiscoverPage() {
       >
         <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="关键词，如 后端 / 算法" />
         <input value={city} onChange={(event) => setCity(event.target.value)} placeholder="城市" />
+        <select value={jobType} onChange={(event) => setJobType(event.target.value)}>
+          <option value="校招全职">只要校招</option>
+          <option value="实习">只要实习</option>
+          <option value="校招全职 / 实习均可">校招或实习</option>
+          <option value="不限">不限类型</option>
+        </select>
         <select value={source} onChange={(event) => setSource(event.target.value)}>
           <option value="">全部来源</option>
           <option value="official">公司官网</option>
           <option value="nowcoder">牛客</option>
         </select>
+        <input
+          type="number"
+          min={0}
+          value={salaryMin || ''}
+          onChange={(event) => setSalaryMin(Number(event.target.value) || 0)}
+          placeholder="最低月薪 K"
+        />
+        <input
+          type="number"
+          min={0}
+          value={salaryMax || ''}
+          onChange={(event) => setSalaryMax(Number(event.target.value) || 0)}
+          placeholder="最高月薪 K"
+        />
         <button className="btn btn--primary" type="submit" disabled={busy}>
           筛选
         </button>
@@ -82,7 +115,7 @@ export default function DiscoverPage() {
         </button>
       </form>
       {error ? <p className="error">{error}</p> : null}
-      <JobList jobs={jobs} />
+      <JobList jobs={jobs} empty="没有符合校招类型和薪资条件的职位。未标注薪资的校招入口仍会显示；社招默认排除。" />
     </section>
   )
 }

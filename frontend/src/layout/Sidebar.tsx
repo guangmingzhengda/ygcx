@@ -1,8 +1,12 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { api } from '../api'
 import { brand } from '../brand'
+import { CONVERSATIONS_CHANGED } from '../conversation'
+import type { ConversationSummary } from '../types'
 
 const items = [
-  { to: '/', label: '新对话', icon: 'chat', end: true },
+  { to: '/new', label: '新对话', icon: 'plus', end: true },
   { to: '/discover', label: '职位发现', icon: 'search', end: false },
   { to: '/favorites', label: '收藏夹', icon: 'book', end: false },
   { to: '/profile', label: '个人档案', icon: 'user', end: false },
@@ -11,10 +15,10 @@ const items = [
 
 function Icon({ name }: { name: (typeof items)[number]['icon'] }) {
   const common = { width: 18, height: 18, fill: 'none', stroke: 'currentColor', strokeWidth: 1.7 }
-  if (name === 'chat') {
+  if (name === 'plus') {
     return (
       <svg viewBox="0 0 24 24" {...common}>
-        <path d="M5 6h14v9H8l-3 3V6z" />
+        <path d="M12 5v14M5 12h14" />
       </svg>
     )
   }
@@ -56,17 +60,32 @@ type Props = {
 }
 
 export function Sidebar({ open, onClose }: Props) {
+  const location = useLocation()
+  const [recent, setRecent] = useState<ConversationSummary[]>([])
+
+  useEffect(() => {
+    const load = () => {
+      void api
+        .listConversations()
+        .then((rows) => setRecent(rows.slice(0, 40)))
+        .catch(() => setRecent([]))
+    }
+    load()
+    window.addEventListener(CONVERSATIONS_CHANGED, load)
+    return () => window.removeEventListener(CONVERSATIONS_CHANGED, load)
+  }, [location.pathname])
+
   return (
     <aside className={`sidebar ${open ? 'is-open' : ''}`}>
-      <div className="brand">
+      <NavLink to="/" className="brand" onClick={onClose}>
         <span className="brand__mark">
-          <img src={brand.logo} alt={brand.team} />
+          <img src={brand.logo} alt="" />
         </span>
         <div>
           <strong>{brand.product}</strong>
           <p>{brand.team}</p>
         </div>
-      </div>
+      </NavLink>
       <nav className="nav">
         {items.map((item) => (
           <NavLink
@@ -81,6 +100,23 @@ export function Sidebar({ open, onClose }: Props) {
           </NavLink>
         ))}
       </nav>
+      {recent.length ? (
+        <div className="recent">
+          <p className="recent__label">最近对话</p>
+          <div className="recent__list">
+            {recent.map((item) => (
+              <NavLink
+                key={item.id}
+                to={`/chat/${item.id}`}
+                className={({ isActive }) => `recent__item ${isActive ? 'is-active' : ''}`}
+                onClick={onClose}
+              >
+                {item.title || '未命名对话'}
+              </NavLink>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="sidebar__foot">
         <div className="brand-badges">
           <img src={brand.teamBadge} alt={`${brand.team}队徽`} />
