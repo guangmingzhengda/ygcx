@@ -33,7 +33,19 @@ cp .env.example .env
 LLM_API_KEY=你的密钥
 ```
 
-默认模型是 **GLM-4.7-Flash**（`LLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4`）。免费档通常限制并发为 1。也可改 `LLM_BASE_URL` / `LLM_MODEL` 换成其他 OpenAI 兼容服务。改完 `.env` 后需重启后端。
+默认模型是 **GLM-4.7-Flash**（`LLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4`）。免费档通常限制并发为 1。
+
+测试 **DeepSeek V4 Flash** 时，到 [DeepSeek 开放平台](https://platform.deepseek.com) 创建 API Key，把根目录 `.env` 改成：
+
+```
+LLM_API_KEY=sk-你的DeepSeek密钥
+LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-v4-flash
+```
+
+保存后**必须重启后端**（`--reload` 不会自动重读 `.env`）：在跑 uvicorn 的终端里 Ctrl+C，再执行一次 `uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`。然后 `curl http://127.0.0.1:8000/api/health`，应看到 `"llm_model": "deepseek-v4-flash"` 且 `"llm_ready": true`。
+
+也可改成其他 OpenAI 兼容服务。改完 `.env` 后都要重启后端。
 
 ### 2. 启动后端（终端一）
 

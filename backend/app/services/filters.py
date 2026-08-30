@@ -111,7 +111,8 @@ def type_allowed(job_type: str, want: str) -> bool:
     if want in {"校招全职", "校招"}:
         return job_type == "校招"
     if want == "实习":
-        return job_type == "实习"
+        # 库里多为公司校招入口，实习岗往往也在这些页面里，不能整表丢掉
+        return job_type in {"实习", "校招"}
     if "均可" in want or "校招全职 / 实习" in want:
         return job_type in {"校招", "实习"}
     if "社招" in want:

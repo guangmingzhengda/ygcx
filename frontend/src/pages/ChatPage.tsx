@@ -107,7 +107,7 @@ export default function ChatPage() {
             </div>
           ))
         )}
-        {busy ? <p className="muted">正在检索公开校招信息…</p> : null}
+        {busy ? <p className="muted">正在检索公开信息，并请模型点评卡片…</p> : null}
         {error ? <p className="error">{error}</p> : null}
       </div>
       <form

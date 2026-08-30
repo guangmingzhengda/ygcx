@@ -13,7 +13,7 @@ from app.services.conversations import (
 )
 from app.services.filters import describe_constraints
 from app.services.jobs import cache_is_stale, list_jobs, rank_jobs, refresh_jobs
-from app.services.llm import plan_search
+from app.services.llm import analyze_jobs, llm_enabled, plan_search
 from app.services.profile import get_or_create_profile
 
 router = APIRouter(tags=["chat"])
@@ -33,11 +33,60 @@ async def chat(payload: ChatIn, db: Session = Depends(get_db)) -> ChatOut:
         salary_min=plan.salary_min,
         salary_max=plan.salary_max,
     )
-    ranked = rank_jobs(db, profile, jobs, plan.keywords, constraints=plan)[:12]
-    if not ranked:
+    relaxed = False
+    if not jobs:
+        jobs = list_jobs(db, q=plan.keywords, job_type="校招全职 / 实习均可")
+        relaxed = True
+    ranked = rank_jobs(db, profile, jobs, plan.keywords, constraints=plan, use_llm=False)[:12]
+    analysis, llm_ranks = analyze_jobs(
+        profile,
+        payload.message,
+        [
+            {
+                "id": item.id,
+                "title": item.title,
+                "company": item.company,
+                "city": item.city,
+                "job_type": item.job_type,
+                "salary": item.salary_text,
+                "tags": item.tags,
+                "description": item.description,
+            }
+            for item in ranked
+        ],
+    )
+    if llm_ranks:
+        merged = []
+        for item in ranked:
+            extra = llm_ranks.get(item.id)
+            if extra:
+                h = item.match_score or 0
+                item = item.model_copy(
+                    update={
+                        "match_score": max(0, min(100, round(0.5 * int(extra["score"]) + 0.5 * h))),
+                        "match_reason": extra.get("reason") or item.match_reason,
+                    }
+                )
+            merged.append(item)
+        merged.sort(key=lambda row: row.match_score or 0, reverse=True)
+        ranked = merged
+    if ranked:
+        if analysis:
+            note = ""
+            if relaxed:
+                note = "\n\n（城市/薪资硬条件已放宽，低匹配度也会列出。）"
+            plan.reply = analysis + note
+        elif llm_enabled():
+            plan.reply = (
+                "大模型当前繁忙或暂时不可用，这次先用规则排序，点评会比较短。稍后再问一次会重新分析。\n"
+                + (plan.reply or f"已按「{describe_constraints(plan)}」列出结果。")
+            )
+        elif not plan.reply:
+            plan.reply = f"已按「{describe_constraints(plan)}」排序，匹配度低的也会列出。"
+    else:
         plan.reply = (
-            f"按「{describe_constraints(plan)}」没有筛到合适职位。"
-            "社招已排除；未标注薪资的校招入口只有在类型匹配时才会保留。可以放宽薪资或城市再试。"
+            f"按「{describe_constraints(plan)}」库里暂时没有职位可展示。"
+            "请先点职位发现里的「刷新数据源」，或稍后再试。"
         )
     conv = get_or_create_conversation(db, payload.conversation_id, payload.message)
     add_message(db, conv, "user", payload.message)

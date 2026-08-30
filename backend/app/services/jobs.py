@@ -181,7 +181,18 @@ def heuristic_score(profile: Profile, job: Job, keywords: str, constraints: Cons
     query = " ".join(part for part in [keywords, role] if part)
     job_type = classify_job_type(job.title, job.description, job.tags, job.job_type)
     generic = any(mark in title for mark in ("校园招聘入口", "校招日程", "职位广场"))
-    if job_type == "校招":
+    want_type = ((constraints.job_type if constraints else "") or profile.expected_job_type or "").strip()
+    if want_type == "实习":
+        if job_type == "实习":
+            score += 16
+            reasons.append("实习岗位")
+        elif job_type == "校招":
+            score += 6
+            reasons.append("校招入口里通常也有实习，需打开确认")
+        else:
+            score -= 20
+            reasons.append("不是实习/校招向")
+    elif job_type == "校招":
         score += 10
         reasons.append("校招/应届向")
     elif job_type == "实习":
@@ -306,6 +317,7 @@ def list_jobs(
     rows = list(db.scalars(select(Job)))
     city_n = city.lower().strip()
     source_n = source.strip()
+    intern_search = (job_type or "").strip() == "实习"
     filtered: list[Job] = []
     for job in rows:
         hay = f"{job.title} {job.company} {job.city} {job.description} {job.tags}".lower()
@@ -319,7 +331,7 @@ def list_jobs(
             job.salary_min, job.salary_max = smin, smax
             if stext:
                 job.salary_text = stext
-        if not salary_overlap(smin, smax, salary_min, salary_max):
+        if not intern_search and not salary_overlap(smin, smax, salary_min, salary_max):
             continue
         if city_n and city_n not in (job.city or "").lower() and city_n not in hay:
             continue
