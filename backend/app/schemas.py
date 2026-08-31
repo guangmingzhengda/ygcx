@@ -26,6 +26,12 @@ class ExperiencePostOut(BaseModel):
     source: str = "nowcoder"
 
 
+class ExperienceSearchLink(BaseModel):
+    label: str
+    url: str
+    source: str = ""
+
+
 class JobOut(BaseModel):
     id: str
     title: str
@@ -47,6 +53,7 @@ class JobOut(BaseModel):
     boss_search_url: str = ""
     favorited: bool = False
     experience_posts: list[ExperiencePostOut] = Field(default_factory=list)
+    experience_search_links: list[ExperienceSearchLink] = Field(default_factory=list)
     nowcoder_experience_url: str = ""
     zhihu_experience_url: str = ""
 

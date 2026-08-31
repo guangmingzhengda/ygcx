@@ -8,6 +8,17 @@ const SOURCE_LABEL: Record<string, string> = {
   boss: 'Boss',
 }
 
+const EXP_SOURCE_LABEL: Record<string, string> = {
+  nowcoder: '牛客',
+  segmentfault: '思否',
+  zhihu: '知乎',
+  juejin: '掘金',
+  csdn: 'CSDN',
+  xiaohongshu: '小红书',
+  v2ex: 'V2EX',
+  yingjiesheng: '应届生',
+}
+
 type Props = {
   job: Job
   onFavoriteChange?: (job: Job) => void
@@ -47,6 +58,18 @@ export function JobCard({ job, onFavoriteChange }: Props) {
   const official = (local.official_url || '').replace(/\/$/, '')
   const showOfficial = Boolean(official && official !== apply)
 
+  const searchLinks =
+    local.experience_search_links && local.experience_search_links.length > 0
+      ? local.experience_search_links
+      : [
+          local.nowcoder_experience_url
+            ? { label: '牛客面经搜索', url: local.nowcoder_experience_url, source: 'nowcoder' }
+            : null,
+          local.zhihu_experience_url
+            ? { label: '知乎面经搜索', url: local.zhihu_experience_url, source: 'zhihu' }
+            : null,
+        ].filter((item): item is { label: string; url: string; source: string } => Boolean(item))
+
   return (
     <article className="job-card">
       <header className="job-card__head">
@@ -82,27 +105,21 @@ export function JobCard({ job, onFavoriteChange }: Props) {
         <p className="job-card__desc">{local.description}</p>
       ) : null}
       {local.match_reason ? <p className="job-card__reason">{local.match_reason}</p> : null}
-      {(local.experience_posts && local.experience_posts.length > 0) ||
-      local.nowcoder_experience_url ||
-      local.zhihu_experience_url ? (
+      {(local.experience_posts && local.experience_posts.length > 0) || searchLinks.length > 0 ? (
         <section className="job-card__exps">
           <p className="job-card__exps-title">相关经验贴</p>
-          {local.experience_posts?.slice(0, 3).map((post) => (
+          {local.experience_posts?.slice(0, 4).map((post) => (
             <a key={post.url} className="job-card__exp" href={post.url} target="_blank" rel="noreferrer">
+              <span className="job-card__exp-src">{EXP_SOURCE_LABEL[post.source] ?? post.source}</span>
               {post.title}
             </a>
           ))}
           <div className="job-card__exp-links">
-            {local.nowcoder_experience_url ? (
-              <a href={local.nowcoder_experience_url} target="_blank" rel="noreferrer">
-                牛客面经搜索
+            {searchLinks.map((link) => (
+              <a key={link.source || link.url} href={link.url} target="_blank" rel="noreferrer">
+                {link.label}
               </a>
-            ) : null}
-            {local.zhihu_experience_url ? (
-              <a href={local.zhihu_experience_url} target="_blank" rel="noreferrer">
-                知乎面经搜索
-              </a>
-            ) : null}
+            ))}
           </div>
         </section>
       ) : null}

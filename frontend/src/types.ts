@@ -33,6 +33,7 @@ export type Job = {
   boss_search_url: string
   favorited: boolean
   experience_posts?: { title: string; url: string; source: string }[]
+  experience_search_links?: { label: string; url: string; source: string }[]
   nowcoder_experience_url?: string
   zhihu_experience_url?: string
 }

@@ -82,15 +82,13 @@ export default function ChatPage() {
         {messages.length === 0 ? (
           <div className="hero">
             <div className="hero-logo">
-              <video autoPlay muted loop playsInline poster={brand.logo} aria-label={brand.team}>
-                <source src={brand.logoVideo} type="video/mp4" />
-              </video>
+              <img src={brand.logo} alt={brand.team} />
             </div>
             <p className="hero__team">
               {brand.team} · {brand.group}
             </p>
             <h1>今天想找哪类校招？</h1>
-            <p>结合你的学历、专业和意向城市，从官网与牛客公开信息里整理岗位，并给出 Boss 搜索跳转。</p>
+            <p>结合你的学历、专业和意向城市，从官网与牛客公开信息里整理岗位，并附上多来源面经搜索。</p>
             <div className="hint-row">
               {['帮我找杭州的后端校招', '有哪些大厂算法实习', '推荐适合计算机专业的网申'].map((text) => (
                 <button key={text} type="button" className="chip chip--click" onClick={() => setInput(text)}>

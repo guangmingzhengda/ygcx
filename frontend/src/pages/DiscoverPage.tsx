@@ -59,7 +59,7 @@ export default function DiscoverPage() {
         <div>
           <h1>职位发现</h1>
           <p>
-            卡片右上角是匹配度。职位发现用规则打分；对话里会再用 AI 理解条件并重排。每张卡会附带该公司在牛客公开页上的面经/经验贴，抓不到具体帖子时也可以跳转搜索。
+            卡片右上角是匹配度。职位发现用规则打分；对话里会再用 AI 理解条件并重排。每张卡会附带该公司在牛客、思否等公开页上的面经；抓不到具体帖时仍可跳转知乎、掘金、CSDN、小红书等搜索。
           </p>
         </div>
         <button className="btn" type="button" disabled={busy} onClick={() => void load(true)}>

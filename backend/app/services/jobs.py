@@ -18,6 +18,7 @@ from app.services.adapters.nowcoder import fetch_nowcoder
 from app.services.adapters.official import fetch_official, seed_portals
 from app.services.experiences import (
     experience_cache_is_stale,
+    experience_search_links,
     list_experiences_for,
     nowcoder_experience_url,
     refresh_experiences,
@@ -300,6 +301,7 @@ def to_out(
         boss_search_url=boss_search_url(search_key, city.split("/")[0].strip() if city else ""),
         favorited=favorited,
         experience_posts=list_experiences_for(db, job.company) if db is not None else [],
+        experience_search_links=experience_search_links(job.company, role),
         nowcoder_experience_url=nowcoder_experience_url(job.company, role),
         zhihu_experience_url=zhihu_experience_url(job.company, role),
     )
