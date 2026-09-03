@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { brand } from '../brand'
@@ -16,8 +16,34 @@ export default function ChatPage() {
   const [error, setError] = useState('')
   const [streaming, setStreaming] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
+  const pendingText = useRef('')
+  const shownText = useRef('')
+  const rafId = useRef(0)
   const isNew = location.pathname === '/new'
   const lastId = getLastConversationId()
+
+  const stopSmoothStream = useCallback(() => {
+    if (rafId.current) {
+      cancelAnimationFrame(rafId.current)
+      rafId.current = 0
+    }
+    pendingText.current = ''
+  }, [])
+
+  const pumpStream = useCallback(() => {
+    rafId.current = 0
+    const queue = pendingText.current
+    if (!queue) return
+    const pace = queue.length > 32 ? 3 : 1
+    const n = Math.min(queue.length, pace)
+    shownText.current += queue.slice(0, n)
+    pendingText.current = queue.slice(n)
+    const text = shownText.current
+    setMessages((prev) => prev.map((msg) => (msg.id === -1 ? { ...msg, content: text } : msg)))
+    if (pendingText.current) {
+      rafId.current = requestAnimationFrame(pumpStream)
+    }
+  }, [])
 
   useEffect(() => {
     if (!id) {
@@ -44,9 +70,17 @@ export default function ChatPage() {
       })
   }, [id, navigate])
 
+  useEffect(() => () => stopSmoothStream(), [stopSmoothStream])
+
   useEffect(() => {
-    boxRef.current?.scrollTo({ top: boxRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages])
+    const el = boxRef.current
+    if (!el) return
+    if (streaming) {
+      el.scrollTop = el.scrollHeight
+      return
+    }
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }, [messages, streaming])
 
   if (!id && !isNew && lastId) {
     return <Navigate to={`/chat/${lastId}`} replace />
@@ -59,6 +93,8 @@ export default function ChatPage() {
     setBusy(true)
     setStreaming(true)
     setError('')
+    stopSmoothStream()
+    shownText.current = ''
     setMessages((prev) => [
       ...prev,
       { id: Date.now(), role: 'user', content: text, jobs: [] },
@@ -73,14 +109,12 @@ export default function ChatPage() {
           )
         },
         onDelta: (chunk) => {
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === -1 ? { ...msg, content: msg.content + chunk } : msg)),
-          )
-        },
-        onJobs: (jobs) => {
-          setMessages((prev) => prev.map((msg) => (msg.id === -1 ? { ...msg, jobs } : msg)))
+          pendingText.current += chunk
+          if (!rafId.current) rafId.current = requestAnimationFrame(pumpStream)
         },
         onDone: ({ conversation_id, assistant, jobs }) => {
+          stopSmoothStream()
+          shownText.current = assistant
           setLastConversationId(conversation_id)
           setMessages((prev) => {
             const next = prev.map((msg) =>
@@ -93,6 +127,7 @@ export default function ChatPage() {
         },
       })
     } catch (err) {
+      stopSmoothStream()
       setError(err instanceof Error ? err.message : '发送失败')
       setMessages((prev) => prev.filter((msg) => msg.id !== -1))
     } finally {
@@ -101,14 +136,14 @@ export default function ChatPage() {
     }
   }
 
-  function onFav(job: Job) {
+  const onFav = useCallback((job: Job) => {
     setMessages((prev) =>
       prev.map((msg) => ({
         ...msg,
         jobs: msg.jobs.map((item) => (item.id === job.id ? job : item)),
       })),
     )
-  }
+  }, [])
 
   return (
     <section className="page page--chat">
@@ -137,11 +172,19 @@ export default function ChatPage() {
               key={msg.id}
               className={`bubble bubble--${msg.role}${streaming && msg.id === -1 ? ' bubble--stream' : ''}`}
             >
-              <p>
-                {msg.content}
-                {streaming && msg.id === -1 ? <span className="stream-cursor" /> : null}
-              </p>
-              {msg.jobs.length ? <JobList jobs={msg.jobs} onFavoriteChange={onFav} /> : null}
+              {msg.jobs.length ? (
+                <JobList
+                  jobs={msg.jobs}
+                  onFavoriteChange={onFav}
+                  enter={streaming && msg.id === -1}
+                />
+              ) : null}
+              {msg.content || (streaming && msg.id === -1) ? (
+                <p className={!msg.content ? 'muted' : undefined}>
+                  {msg.content || (msg.jobs.length ? '正在根据卡片写点评…' : '正在检索公开职位…')}
+                  {streaming && msg.id === -1 ? <span className="stream-cursor" /> : null}
+                </p>
+              ) : null}
             </div>
           ))
         )}

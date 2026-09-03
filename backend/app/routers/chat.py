@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -191,9 +190,7 @@ async def chat_stream(payload: ChatIn, db: Session = Depends(get_db)) -> Streami
                 if extra:
                     yield sse({"type": "delta", "text": extra})
             elif not streamed and reply:
-                for i in range(0, len(reply), 2):
-                    yield sse({"type": "delta", "text": reply[i : i + 2]})
-                    time.sleep(0.018)
+                yield sse({"type": "delta", "text": reply})
             if llm_ranks:
                 yield sse({"type": "jobs", "jobs": [item.model_dump(mode="json") for item in final_jobs]})
             session = SessionLocal()

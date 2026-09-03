@@ -374,12 +374,16 @@ textarea {
 
 .bubble p {
   white-space: pre-wrap;
-  line-height: 1.6;
-  margin-bottom: 12px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.bubble .job-grid + p {
+  margin-top: 14px;
 }
 
 .bubble--stream p {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .stream-cursor {
@@ -567,6 +571,26 @@ textarea:focus {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 14px;
+}
+
+.job-grid-item {
+  min-width: 0;
+}
+
+.job-grid--enter .job-grid-item {
+  animation: job-pop 0.48s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+@keyframes job-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .job-card {

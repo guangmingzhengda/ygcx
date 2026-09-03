@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import type { Job } from '../types'
 import { api } from '../api'
 
@@ -24,7 +24,7 @@ type Props = {
   onFavoriteChange?: (job: Job) => void
 }
 
-export function JobCard({ job, onFavoriteChange }: Props) {
+export const JobCard = memo(function JobCard({ job, onFavoriteChange }: Props) {
   const [busy, setBusy] = useState(false)
   const [local, setLocal] = useState(job)
 
@@ -145,4 +145,4 @@ export function JobCard({ job, onFavoriteChange }: Props) {
       </footer>
     </article>
   )
-}
+})
