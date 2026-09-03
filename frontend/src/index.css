@@ -378,6 +378,26 @@ textarea {
   margin-bottom: 12px;
 }
 
+.bubble--stream p {
+  margin-bottom: 8px;
+}
+
+.stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -2px;
+  background: var(--accent-2);
+  animation: stream-blink 1s step-end infinite;
+}
+
+@keyframes stream-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 .composer,
 .filters,
 .boss-form {
@@ -843,4 +863,54 @@ textarea:focus {
   .bubble--user {
     margin-left: 0;
   }
+}
+
+.gate {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.gate__card {
+  width: min(420px, 100%);
+  background: color-mix(in srgb, var(--card) 88%, black);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 24px 24px;
+}
+
+.gate__card img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent);
+  background: #fff;
+}
+
+.gate__card h1 {
+  margin: 8px 0 10px;
+  font-size: 22px;
+}
+
+.gate__card p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.gate__card form {
+  display: flex;
+  gap: 10px;
+}
+
+.gate__card input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-elev) 80%, black);
+  border-radius: 13px;
+  padding: 10px 12px;
 }

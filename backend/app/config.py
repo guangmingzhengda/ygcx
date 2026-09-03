@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     llm_model: str = "glm-4.7-flash"
     cache_ttl_hours: int = 8
     request_interval_seconds: float = 1.5
+    access_token: str = ""
     database_url: str = f"sqlite:///{DATA_DIR / 'app.db'}"
     companies_path: Path = ROOT_DIR / "data" / "companies.yml"
 

@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { brand } from '../brand'
 import { JobList } from '../components/JobList'
-import { getLastConversationId, setLastConversationId, clearLastConversationId } from '../conversation'
+import { getLastConversationId, setLastConversationId, clearLastConversationId, stashStreamHandoff, takeStreamHandoff } from '../conversation'
 import type { ChatMessage, Job } from '../types'
 
 export default function ChatPage() {
@@ -14,6 +14,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [streaming, setStreaming] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
   const isNew = location.pathname === '/new'
   const lastId = getLastConversationId()
@@ -21,6 +22,12 @@ export default function ChatPage() {
   useEffect(() => {
     if (!id) {
       setMessages([])
+      setError('')
+      return
+    }
+    const stashed = takeStreamHandoff(id)
+    if (stashed) {
+      setMessages(stashed)
       setError('')
       return
     }
@@ -50,20 +57,47 @@ export default function ChatPage() {
     if (!text || busy) return
     setInput('')
     setBusy(true)
+    setStreaming(true)
     setError('')
     setMessages((prev) => [
       ...prev,
       { id: Date.now(), role: 'user', content: text, jobs: [] },
+      { id: -1, role: 'assistant', content: '', jobs: [] },
     ])
     try {
-      const result = await api.chat(text, id)
-      setLastConversationId(result.conversation_id)
-      if (!id) navigate(`/chat/${result.conversation_id}`, { replace: true })
-      setMessages(result.conversation.messages)
+      await api.chatStream(text, id, {
+        onStart: (conversationId, jobs) => {
+          setLastConversationId(conversationId)
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === -1 ? { ...msg, jobs } : msg)),
+          )
+        },
+        onDelta: (chunk) => {
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === -1 ? { ...msg, content: msg.content + chunk } : msg)),
+          )
+        },
+        onJobs: (jobs) => {
+          setMessages((prev) => prev.map((msg) => (msg.id === -1 ? { ...msg, jobs } : msg)))
+        },
+        onDone: ({ conversation_id, assistant, jobs }) => {
+          setLastConversationId(conversation_id)
+          setMessages((prev) => {
+            const next = prev.map((msg) =>
+              msg.id === -1 ? { ...msg, id: Date.now(), content: assistant, jobs } : msg,
+            )
+            if (!id) stashStreamHandoff(conversation_id, next)
+            return next
+          })
+          if (!id) navigate(`/chat/${conversation_id}`, { replace: true })
+        },
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : '发送失败')
+      setMessages((prev) => prev.filter((msg) => msg.id !== -1))
     } finally {
       setBusy(false)
+      setStreaming(false)
     }
   }
 
@@ -99,13 +133,19 @@ export default function ChatPage() {
           </div>
         ) : (
           messages.map((msg) => (
-            <div key={msg.id} className={`bubble bubble--${msg.role}`}>
-              <p>{msg.content}</p>
+            <div
+              key={msg.id}
+              className={`bubble bubble--${msg.role}${streaming && msg.id === -1 ? ' bubble--stream' : ''}`}
+            >
+              <p>
+                {msg.content}
+                {streaming && msg.id === -1 ? <span className="stream-cursor" /> : null}
+              </p>
               {msg.jobs.length ? <JobList jobs={msg.jobs} onFavoriteChange={onFav} /> : null}
             </div>
           ))
         )}
-        {busy ? <p className="muted">正在检索公开信息，并请模型点评卡片…</p> : null}
+        {busy && !streaming ? <p className="muted">正在检索公开信息，并请模型点评卡片…</p> : null}
         {error ? <p className="error">{error}</p> : null}
       </div>
       <form
@@ -140,7 +180,7 @@ export default function ChatPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            {busy ? '检索中' : '发送'}
+            {busy ? (streaming ? '生成中' : '检索中') : '发送'}
           </button>
         </div>
         <p className="composer__hint">Enter 发送，Shift + Enter 换行</p>

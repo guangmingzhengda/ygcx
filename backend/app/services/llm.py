@@ -58,6 +58,87 @@ def _complete(system: str, user: str, *, max_tokens: int = 2500) -> str:
     raise last_error or RuntimeError("llm failed")
 
 
+def _complete_stream(system: str, user: str, *, max_tokens: int = 2500):
+    client = _client()
+    stream = client.chat.completions.create(
+        model=settings.llm_model,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        temperature=0.4,
+        max_tokens=max_tokens,
+        stream=True,
+        extra_body={"thinking": {"type": "disabled"}},
+    )
+    for chunk in stream:
+        if not chunk.choices:
+            continue
+        delta = chunk.choices[0].delta
+        text = (getattr(delta, "content", None) or "").strip("\x00")
+        if not text:
+            text = getattr(delta, "reasoning_content", None) or ""
+        if text:
+            yield text
+
+
+def visible_analysis(raw: str) -> str:
+    """流式过程中隐藏尚未完成的 ranks JSON。"""
+    match = re.search(r"\n\s*\{", raw)
+    if match:
+        return raw[: match.start()].rstrip()
+    match = re.search(r"\{\s*\"ranks\"\s*:", raw)
+    if match:
+        return raw[: match.start()].rstrip()
+    if re.search(r"\{[\s\"r]*$", raw):
+        idx = raw.rfind("{")
+        if idx >= 0:
+            return raw[:idx].rstrip()
+    return raw
+
+
+def _parse_ranks(data: object) -> dict[str, dict]:
+    ranks_raw = data
+    if isinstance(data, dict):
+        ranks_raw = data.get("ranks") or data.get("items") or []
+        if isinstance(ranks_raw, dict):
+            ranks_raw = ranks_raw.get("items") or []
+    result: dict[str, dict] = {}
+    if not isinstance(ranks_raw, list):
+        return result
+    for item in ranks_raw:
+        if not isinstance(item, dict) or "id" not in item:
+            continue
+        try:
+            score = int(item.get("score") or 0)
+        except (TypeError, ValueError):
+            score = 0
+        result[str(item["id"])] = {
+            "score": max(0, min(100, score)),
+            "reason": str(item.get("reason") or ""),
+        }
+    return result
+
+
+def split_analysis(raw: str) -> tuple[str, dict[str, dict]]:
+    data = _extract_json(raw)
+    ranks = _parse_ranks(data) if data is not None else {}
+    reply = visible_analysis(raw).strip()
+    if not reply and isinstance(data, dict):
+        reply = str(data.get("reply") or "").strip()
+    return reply, ranks
+
+
+ANALYZE_SYSTEM = (
+    "你是面向应届生的校招顾问。"
+    "先直接写中文点评，180-320字，不要客套开头，不要标题，不要 JSON。"
+    "点名2-4家更值得看的公司，说明和用户要的实习/岗位/城市差在哪；哪些只是校招入口、要自己点进去。"
+    "点评结束后另起一行，只输出一个 JSON 对象："
+    '{"ranks":[{"id":"...","score":0-100整数,"reason":"两句具体中文"}]}'
+    "分数必须拉开。社招给 0 分。入口页最高 72 分。JSON 前后不要代码围栏。"
+)
+
+
 def _extract_json(text: str) -> dict | list | None:
     text = text.strip()
     fenced = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
@@ -149,37 +230,53 @@ def analyze_jobs(profile: Profile, question: str, jobs: list[dict]) -> tuple[str
     ]
     try:
         raw = _complete(
-            "你是面向应届生的校招顾问。只输出一个 JSON 对象，不要 Markdown。"
-            "字段: reply(中文点评，180-320字，不要客套开头；点名2-4家更值得看的公司，"
-            "说明和用户要的实习/岗位/城市差在哪；明确哪些只是校招入口、要自己点进去看实习和算法岗)，"
-            'ranks(数组，每张卡一项: {"id","score"0-100整数,"reason"两句具体中文})。'
-            "分数必须拉开。社招给 0 分。入口页最高 72 分。",
+            ANALYZE_SYSTEM,
             f"档案: {profile_brief(profile)}\n用户问题: {question}\n职位: {json.dumps(payload, ensure_ascii=False)}",
         )
-        data = _extract_json(raw)
-        if not isinstance(data, dict):
-            return "", {}
-        reply = str(data.get("reply") or "").strip()
-        ranks_raw = data.get("ranks") or data.get("items") or []
-        if isinstance(ranks_raw, dict):
-            ranks_raw = ranks_raw.get("items") or []
-        result: dict[str, dict] = {}
-        if isinstance(ranks_raw, list):
-            for item in ranks_raw:
-                if not isinstance(item, dict) or "id" not in item:
-                    continue
-                try:
-                    score = int(item.get("score") or 0)
-                except (TypeError, ValueError):
-                    score = 0
-                result[str(item["id"])] = {
-                    "score": max(0, min(100, score)),
-                    "reason": str(item.get("reason") or ""),
-                }
-        return reply, result
+        return split_analysis(raw)
     except Exception:
         logger.warning("analyze_jobs llm failed", exc_info=True)
         return "", {}
+
+
+def analyze_jobs_stream(profile: Profile, question: str, jobs: list[dict]):
+    """产出 ('delta', 可见增量) ，结束后产出 ('result', (reply, ranks))。"""
+    if not llm_enabled() or not jobs:
+        yield "result", ("", {})
+        return
+    payload = [
+        {
+            "id": job.get("id"),
+            "title": job.get("title"),
+            "company": job.get("company"),
+            "city": job.get("city"),
+            "job_type": job.get("job_type") or "",
+            "salary": job.get("salary") or "",
+            "tags": job.get("tags") or [],
+            "description": (job.get("description") or "")[:160],
+        }
+        for job in jobs[:12]
+    ]
+    acc = ""
+    shown = ""
+    try:
+        for piece in _complete_stream(
+            ANALYZE_SYSTEM,
+            f"档案: {profile_brief(profile)}\n用户问题: {question}\n职位: {json.dumps(payload, ensure_ascii=False)}",
+        ):
+            acc += piece
+            extra = ""
+            visible = visible_analysis(acc)
+            if len(visible) > len(shown) and visible.startswith(shown):
+                extra = visible[len(shown) :]
+                shown = visible
+            if extra:
+                yield "delta", extra
+        yield "result", split_analysis(acc)
+    except Exception:
+        logger.warning("analyze_jobs_stream llm failed", exc_info=True)
+        reply, ranks = split_analysis(acc)
+        yield "result", (reply, ranks)
 
 
 def rank_with_llm(profile: Profile, jobs: list[dict], keywords: str) -> dict[str, dict]:
